@@ -1,8 +1,9 @@
 var config = require('./modules/config');
 
+const Xvfb = require('xvfb');
 if (config.mode == "server") {
     console.log("yes ");
-    const Xvfb = require('xvfb');
+
 } else {
     console.log("not ");
 }
