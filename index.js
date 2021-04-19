@@ -1,8 +1,12 @@
 var config = require('./modules/config');
 
 if (config.mode == "server") {
+    console.log("yes ");
     const Xvfb = require('xvfb');
+} else {
+    console.log("not ");
 }
+console.log(config.mode);
 if (config.mode == "local") {
 
 }
