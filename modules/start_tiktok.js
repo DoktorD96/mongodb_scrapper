@@ -117,7 +117,7 @@ EXPORT.openpage = async function (pageurl, optimize) {
 
         await EXPORT.PAGE.exposeFunction("nodeLog", EXPORT.nodelogmsg);
 
-    } catch {
+    } catch (err) {
         if (config.log) {
             console.log("Open page error => : ", err);
         }
@@ -156,7 +156,7 @@ EXPORT.optimizemem = async function () {
                 request.continue();
         });
 
-    } catch {
+    } catch (err) {
         if (config.log) {
             console.log("Optimization error  => : ", err);
         }
@@ -182,7 +182,7 @@ EXPORT.infinitescrool = async function (pageurl) {
         //     await nodeLog("2 evaluate testing");
         // });
 
-    } catch {
+    } catch (err) {
         if (config.log) {
             console.log("Scroll error => : ", err);
         }
