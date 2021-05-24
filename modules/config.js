@@ -2,7 +2,7 @@ const MODE = process.env.MODE;
 
 
 const config = {
-    log: false,
+    log: true,
     mode: MODE,
     settings: {
 

@@ -1,4 +1,4 @@
-var config = require('./modules/config');
+var config = require('./config');
 const Xvfb = config.mode ? require('xvfb') : null;
 
 if (config.mode == "local") {
@@ -16,7 +16,8 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
 
 EXPORT.br = null;
-
+EXPORT.XVFB = null;
+EXPORT.PAGE = null;
 
 // sleep funkcija
 
@@ -30,26 +31,51 @@ var scrapped = [];
 var sc_len = -1;
 
 
-// log funkcija
+// node log funkcija unutar content scripte
 
-var nodeLog = function (logg) {
-    console.log(logg);
+EXPORT.nodelogmsg = function (logg) {
+    try {
+        if (config.log) {
+            console.log(logg);
+        }
+    } catch (err) {
+        if (config.log) {
+            console.log("Log message error => :", err);
+        }
+    }
 };
 
-// browser start funkcija
-EXPORT.start = function () {
+// close browser instance
+
+EXPORT.close = async function () {
     try {
+        if (config.log) {
+            console.log("closing browser");
+        }
+        await EXPORT.br.close();
+    } catch (err) {
+        if (config.log) {
+            console.log("Closing error => :", err);
+        }
+    }
+}
+
+// browser start funkcija
+
+EXPORT.start = async function () {
+    try {
+
         if (config.mode == "server") {
-            var xvfb = new Xvfb({
+            EXPORT.XVFB = new Xvfb({
                 silent: true,
                 xvfb_args: ["-screen", "0", '800x600x24', "-ac"],
             });
-            xvfb.start((err) => { if (err && config.log) console.error(err) })
+            EXPORT.XVFB.start((err) => { if (err && config.log) console.error(err) })
         }
 
         var configpup = config.settings;
         if (config.mode == "server") {
-            configpup.args.push('--display=' + xvfb._display);
+            configpup.args.push('--display=' + EXPORT.XVFB._display);
             configpup.args.push('--single-process');
             configpup.args.push('--start-fullscreen');
         }
@@ -59,10 +85,7 @@ EXPORT.start = function () {
             configpup.args.push("--window-position=0,0");
         }
 
-
-
         EXPORT.br = await puppeteer.launch(configpup);
-        //browsercon = await browser.createIncognitoBrowserContext();
 
         if (config.log) {
             console.log("Opening the browser......");
@@ -75,84 +98,96 @@ EXPORT.start = function () {
 }
 
 
+
+// open desired page
+
+EXPORT.openpage = async function (pageurl, optimize) {
+    try {
+        if (config.log) {
+            console.log("Opening page url \n" + pageurl + "\n");
+        }
+        const pages = await EXPORT.br.pages();
+        EXPORT.PAGE = pages[0];
+        if (optimize) {
+            EXPORT.optimizemem();
+        }
+        await EXPORT.PAGE.goto(pageurl, {});
+
+        // binding log function inside content script
+
+        await EXPORT.PAGE.exposeFunction("nodeLog", EXPORT.nodelogmsg);
+
+    } catch {
+        if (config.log) {
+            console.log("Open page error => : ", err);
+        }
+    }
+}
+
+// optimize memory which tab consume by blocking media elements
+
+EXPORT.optimizemem = async function () {
+    try {
+
+        if (config.log) {
+            console.log("Block CSS and MEDIA to free memory space");
+        }
+
+        // block unwanted resources like css, images and videos
+        // to free memory space
+
+        await EXPORT.PAGE.setRequestInterception(true);
+        EXPORT.PAGE.on('request', request => {
+            if (
+                request.resourceType() === 'image'
+                || request.resourceType() === 'stylesheet'
+                || request.resourceType() === 'media'
+                || request.resourceType() === 'font'
+                || request.resourceType() === 'webp'
+                || request.resourceType() === 'jpeg'
+                || request.url().endsWith('.png')
+                || request.url().endsWith('.jpg')
+                || request.url().endsWith('.jpeg')
+                || request.url().endsWith('.webp')
+                || request.url().endsWith('.css')
+            )
+                request.abort();
+            else
+                request.continue();
+        });
+
+    } catch {
+        if (config.log) {
+            console.log("Optimization error  => : ", err);
+        }
+    }
+}
+
+// infinite scrool of page
+
+EXPORT.infinitescrool = async function (pageurl) {
+    try {
+        if (config.log) {
+            console.log("Start infinite scrolling.");
+        }
+
+        await EXPORT.PAGE.evaluate(() => {
+            setInterval(async function () {
+                document.documentElement.scrollTop = 1e35;
+                await nodeLog(document.querySelectorAll("div.video-feed-item a[href]").length);
+            }, 10000)
+        });
+
+        // await EXPORT.PAGE.evaluate(async () => {
+        //     await nodeLog("2 evaluate testing");
+        // });
+
+    } catch {
+        if (config.log) {
+            console.log("Scroll error => : ", err);
+        }
+    }
+}
+
+
 module.exports = EXPORT;
-
-
-    // (async () => {
-
-
-
-    //     const pages = await browsercon.pages();
-    //     const page = pages[0];
-
-
-
-
-    //     await page.exposeFunction("nodeLog", nodeLog);
-    //     await page.goto(`https://www.tiktok.com/tag/makeup?is_copy_url=1&is_from_webapp=v1`, {});
-    //     await page.evaluate(async ({ scrapped, sc_len }) => {
-    //         try {
-    //             //await nodeLog(document.querySelector("div.share-layout-content").innerHTML.trim());
-    //             setInterval(async function () {
-    //                 await nodeLog("interval");
-    //                 try {
-    //                     document.documentElement.scrollTop = 1e35;
-    //                     var a = document.querySelectorAll("div.video-feed-item a[href]").length;
-    //                     //document.querySelectorAll("a.video-feed-item-wrapper[href]").length;
-    //                     if (true || config.log) {
-    //                         //await nodeLog(a);
-    //                     }
-    //                     scrapped = [];
-    //                     if (document.querySelectorAll("div.video-feed-item a[href]").length == sc_len) {
-    //                         await nodeLog("equal");
-    //                         document.querySelectorAll("div.video-feed-item a[href]").forEach(async function (element) {
-    //                             let t = element.getAttribute("href");
-    //                             t = t.substring(t.indexOf("@"));
-    //                             t = t.substring(0, t.indexOf("/"));
-    //                             scrapped.push(t);
-    //                         }
-    //                         );
-    //                         if (true || config.log) {
-    //                             await nodeLog("Finall");
-    //                             await nodeLog(scrapped.length);
-    //                         }
-    //                     } else {
-    //                         await nodeLog("not equal");
-    //                         if (true || config.log) {
-    //                             sc_len = document.querySelectorAll("div.video-feed-item a[href]").length;
-    //                             await nodeLog(sc_len);
-    //                         }
-    //                     }
-
-    //                 } catch (e) {
-    //                     await nodeLog(e.message);
-    //                     if (config.log) {
-    //                         await nodeLog("error 1");
-    //                         await nodeLog(JSON.stringify(e));
-    //                     }
-    //                 }
-    //             }, 10000);
-    //         } catch (e) {
-    //             if (config.log) {
-    //                 await nodeLog("error 2");
-    //                 await nodeLog(JSON.stringify(e));
-    //             }
-    //         }
-    //     }, { scrapped, sc_len });
-    //     await page.setDefaultTimeout(5 * 60 * 60);
-    //     const image = await page.screenshot({
-    //         quality: 65,
-    //         type: "jpeg",
-    //         encoding: "base64"
-    //     });
-    //     if (config.log && false) {
-    //         console.log(image);
-    //     }
-    //     await sleep(5 * 60 * 60);
-    //     await browsercon.close();
-
-    //     if (config.mode == "server") {
-    //         xvfb.stop();
-    //     }
-
-    // })()
