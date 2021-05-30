@@ -34,7 +34,7 @@ if (parseInt(process.env.S) == 5) {
     config.skip = 6000;
     config.limit = 1500;
 }
-if (parseInt(process.env.S) == 5) {
+if (parseInt(process.env.S) == 0) {
     config.skip = 7500;
     config.limit = 1500;
 }
@@ -606,6 +606,7 @@ EXPORT.loopfunction = async function () {
         for (var i = 0, l = rows.length; i < l; i++) {
             //EXPORT.idnow = rows[i].Id;
             //EXPORT.keywordnow = row.Keyword;
+            console.log("us  " + rows[i].User);
             await EXPORT.openpage("https://www.tiktok.com/@" + rows[i].User + "?", false);
             await EXPORT.parsejsonuser();
             await EXPORT.sleep(parseFloat("5"));

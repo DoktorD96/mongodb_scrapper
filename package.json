@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "cross-env MODE=local S=0 node -r dotenv/config index.js dotenv_config_path=.env.dev",
-    "server1": "cross-env MODE=server S=1 node -r dotenv/config index.js dotenv_config_path=.env.prod",
+    "server1": "cross-env MODE=server S=1 node -r index.js",
     "server2": "cross-env MODE=server S=2 node -r dotenv/config index.js dotenv_config_path=.env.prod",
     "server3": "cross-env MODE=server S=3 node -r dotenv/config index.js dotenv_config_path=.env.prod",
     "server4": "cross-env MODE=server S=4 node -r dotenv/config index.js dotenv_config_path=.env.prod",
