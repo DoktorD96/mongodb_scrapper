@@ -1,16 +1,14 @@
 var config = require('./config');
 var TIK = require('./start_tiktok');
 
-
+TIK.limitnum = 3;
+TIK.numberofch = 4;
+TIK.number = 0;
 module.exports.startfn = async function () {
 
 
-    await TIK.start();
-    await TIK.openpage("https://www.tiktok.com/tag/makeup?is_copy_url=1&is_from_webapp=v1", true);
-    await TIK.infinitescrool();
-    await TIK.sleep(60 * 60); // 60 min
-    await TIK.close();
-    if (config.mode == "server") {
-        TIK.XVFB.stop();
-    }
+    /*db.each("SELECT `Id`, `Keyword` From `tiktok_tags` WHERE `IsScrapped` = 'false' limit 1",*/
+
+    TIK.loopfunction();
+
 }

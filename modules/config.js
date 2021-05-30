@@ -5,14 +5,14 @@ const config = {
     log: true,
     mode: MODE,
     settings: {
-
+        devtools: false,
+        //userDataDir: "./proxy_data_save",
         ignoreDefaultArgs: ["--disable-extensions"],
-
-        headless: false,
+        headless: true,
         defaultViewport: null,
         ignoreHTTPSErrors: true,
         args: [
-            //--user-data-dir=./proxy_data_save,
+            //'--user-data-dir=./proxy_data_save',
             //"--window-size=200,200",
             //*'--single-process',*/
             '--disable-web-security',

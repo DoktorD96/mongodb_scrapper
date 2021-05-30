@@ -5,17 +5,27 @@
   "main": "index.js",
   "scripts": {
     "start": "cross-env MODE=local node -r dotenv/config index.js dotenv_config_path=.env.dev",
-    "server": "cross-env MODE=server node -r dotenv/config index.js dotenv_config_path=.env.prod",
+    "server1": "cross-env MODE=server S=1 node -r dotenv/config index.js dotenv_config_path=.env.prod",
+    "server2": "cross-env MODE=server S=2 node -r dotenv/config index.js dotenv_config_path=.env.prod",
+    "server3": "cross-env MODE=server S=3 node -r dotenv/config index.js dotenv_config_path=.env.prod",
+    "server4": "cross-env MODE=server S=4 node -r dotenv/config index.js dotenv_config_path=.env.prod",
     "test": "cross-env MODE=test node -r dotenv/config index.js dotenv_config_path=.env.dev"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.21.1",
+    "big-integer": "^1.6.48",
+    "canvas": "^2.8.0",
     "cross-env": "^7.0.3",
     "dotenv": "^8.2.0",
-    "puppeteer": "^8.0.0",
+    "fs": "0.0.1-security",
+    "mongodb": "^3.6.8",
+    "puppeteer": "^5.2.1",
     "puppeteer-extra": "^3.1.18",
     "puppeteer-extra-plugin-stealth": "^2.7.6",
+    "realm": "^10.4.1",
+    "sqlite3": "^5.0.2",
     "xvfb": "^0.4.0"
   }
 }
