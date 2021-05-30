@@ -606,7 +606,7 @@ EXPORT.loopfunction = async function () {
         for (var i = 0, l = rows.length; i < l; i++) {
             //EXPORT.idnow = rows[i].Id;
             //EXPORT.keywordnow = row.Keyword;
-            console.log("us  " + rows[i].User);
+            //console.log("us  " + rows[i].User);
             await EXPORT.openpage("https://www.tiktok.com/@" + rows[i].User + "?", false);
             await EXPORT.parsejsonuser();
             await EXPORT.sleep(parseFloat("5"));
