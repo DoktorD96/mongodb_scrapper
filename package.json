@@ -9,6 +9,7 @@
     "server2": "cross-env MODE=server S=2 node -r dotenv/config index.js dotenv_config_path=.env.prod",
     "server3": "cross-env MODE=server S=3 node -r dotenv/config index.js dotenv_config_path=.env.prod",
     "server4": "cross-env MODE=server S=4 node -r dotenv/config index.js dotenv_config_path=.env.prod",
+    "server5": "cross-env MODE=server S=5 node -r dotenv/config index.js dotenv_config_path=.env.prod",
     "test": "cross-env MODE=test node -r dotenv/config index.js dotenv_config_path=.env.dev"
   },
   "author": "",
