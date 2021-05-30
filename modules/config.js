@@ -2,6 +2,8 @@ const MODE = process.env.MODE;
 
 
 const config = {
+    skip: 0,
+    limit: 50,
     log: true,
     mode: MODE,
     settings: {

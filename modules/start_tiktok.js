@@ -13,6 +13,29 @@ if (config.mode == "test") {
     config.log = true;
 }
 
+
+if (parseInt(process.env.S) == 1) {
+    config.skip = 50;
+    config.limit = 1450;
+}
+if (parseInt(process.env.S) == 2) {
+    config.skip = 1500;
+    config.limit = 1500;
+}
+if (parseInt(process.env.S) == 3) {
+    config.skip = 3000;
+    config.limit = 1500;
+}
+if (parseInt(process.env.S) == 4) {
+    config.skip = 4500;
+    config.limit = 1500;
+}
+if (parseInt(process.env.S) == 4) {
+    config.skip = 6000;
+    config.limit = 1500;
+}
+
+
 var EXPORT = {};
 
 
@@ -36,6 +59,39 @@ var scrapped = [];
 var sc_len = -1;
 
 
+
+// funkcija koja pronalazi mejl adresu unutar signature opisa
+
+function parsestring(str) {
+    if (str != null && str != "") {
+        var array = str.match(/\S+/g);
+        if (array.length != null && array.length > 0) {
+            for (var i = 0, l = array.length; i < l; i++) {
+                if (array[i].length != null && array[i].length > 2) {
+                    array[i] = array[i].trim();
+                    if ("!?.,;<>:{}[]".indexOf(array[i][0]) > -1) {
+                        array[i] = array[i].slice(1, array[i].length);
+                    }
+                    if ("!?.,;<>:{}[]".indexOf(array[i][array[i].length - 1]) > -1) {
+                        array[i] = array[i].slice(0, array[i].length - 1);
+                    }
+                    if (gmailvalidate(array[i]) == true) {
+                        return array[i];
+                        break;
+                    }
+                }
+            }
+            return "";
+        }
+        return "";
+    }
+    return "";
+}
+
+function gmailvalidate(email) {
+    var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(String(email).toLowerCase());
+}
 
 //funkcija koja pretvara image to base64 string
 
@@ -105,6 +161,7 @@ EXPORT.inserData = async function (data) {
         "`LinkOpis` = ? , " +
         "`Adress` = ? , " +
         "`Link` = ? , " +
+        "`Mail` = ? , " +
         "`IsScrapped` = ? , " +
         //NUMBER
         "`KreiranTimestamp`= cast(? as int) , " +
@@ -125,6 +182,7 @@ EXPORT.inserData = async function (data) {
         data.LinkOpis,
         "@" + data.UrlDodatak,
         "https://www.tiktok.com/@" + data.UrlDodatak + "?",
+        data.Mail,
         "true",
         parseInt(data.KreiranTimestamp),
         data.BrojOsobaKojePrati,
@@ -379,18 +437,19 @@ EXPORT.parsejsonuser = async function () {
             var data = json.props.pageProps.userInfo;
 
             var insertData = {
-                "UrlDodatak": "",
-                "IdBroj": "",
-                "Ime": "",
-                "Avatar": "",
-                "Potpis": "",
-                "KreiranTimestamp": "",
-                "SecUid": "",
-                "LinkOpis": "",
-                "BrojOsobaKojePrati": "",
-                "BrojPratilaca": "",
-                "BrojLajkova": "",
-                "BrojVideoUploada": ""
+                "UrlDodatak": "#no_slug#",
+                "IdBroj": "#no_id#",
+                "Ime": "#no_name#",
+                "Avatar": "#no_avatar#",
+                "Mail": "#no_email#",
+                "Potpis": "#no_signature#",
+                "KreiranTimestamp": "0",
+                "SecUid": "#no_sec_uid#",
+                "LinkOpis": "#no_link#",
+                "BrojOsobaKojePrati": "0",
+                "BrojPratilaca": "0",
+                "BrojLajkova": "0",
+                "BrojVideoUploada": "0"
             }
 
 
@@ -424,12 +483,35 @@ EXPORT.parsejsonuser = async function () {
             } catch (e) {
                 console.log("Avatar err >> " + e);
             }
+
             try {
-                insertData.Potpis = data.user.signature.replace(/(?:\r\n|\r|\n)/g, ' ').trim();
+                if (data.user.signature.trim() == "") {
+                    insertData.Potpis = "#no_signature#";
+                } else {
+                    insertData.Potpis = data.user.signature.replace(/(?:\r\n|\r|\n)/g, ' ').trim();
+                }
+
             } catch (e) {
+                insertData.Potpis = "#no_signature#";
                 error = true;
                 //  console.log("Potpis err >> " + JSON.stringify(data) + "\n" + e);
             }
+            try {
+                if (insertData.Potpis != "#no_signature#") {
+                    var mail = parsestring(data.user.signature.trim());
+                    if (mail.trim() != "") {
+                        insertData.Mail = mail.trim();
+                    } else {
+                        insertData.Mail = "#no_email#";
+                    }
+                } else {
+                    insertData.Mail = "#no_email#";
+                }
+            } catch (e) {
+                insertData.Mail = "#no_email#";
+            }
+
+
             try {
                 insertData.KreiranTimestamp = parseInt(data.user.createTime);
             } catch (e) {
@@ -443,9 +525,14 @@ EXPORT.parsejsonuser = async function () {
                 //  console.log("SecUid err >> " + JSON.stringify(data) + "\n" + e);
             }
             try {
-                insertData.LinkOpis = data.user.bioLink.link;
+                if (data.user.bioLink.link.trim() == "") {
+                    insertData.LinkOpis = "#no_link#"
+                } else {
+                    insertData.LinkOpis = data.user.bioLink.link;
+                }
             } catch (e) {
-                error = true;
+                insertData.LinkOpis = "#no_link#"
+                //error = true;
                 // console.log("LinkOpis err >> " + JSON.stringify(data) + "\n" + e);
             }
             try {
@@ -474,13 +561,13 @@ EXPORT.parsejsonuser = async function () {
             }
 
             if (error == true) {
-                nodeLog("error >> " + window.location.href);
+                nodeLog(window.location.href);
             }
             await inserData(insertData);
         }, {});
     } catch (err) {
         if (config.log) {
-            console.log("Parse user Err => : ", err);
+            // console.log("Parse user Err => : ", err);
         }
     }
 }
@@ -493,7 +580,7 @@ EXPORT.loopfunction = async function () {
     }
 
 
-    db.all("SELECT `Id`, `User` From `tiktok_uniq_users` LIMIT 1000", async (error, rows) => {
+    db.all("SELECT `Id`, `User` From `tiktok_uniq_users` LIMIT " + config.limit + " OFFSET " + config.skip + ";", async (error, rows) => {
         if (error) {
             if (config.log) {
                 return console.error(error.message);
@@ -502,6 +589,7 @@ EXPORT.loopfunction = async function () {
 
         if (EXPORT.started == false) {
             await EXPORT.start();
+            await EXPORT.sleep(parseFloat("30"));
         }
 
         if (config.mode == "server") {
