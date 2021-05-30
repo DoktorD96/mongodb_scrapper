@@ -15,8 +15,8 @@ if (config.mode == "test") {
 
 
 if (parseInt(process.env.S) == 1) {
-    config.skip = 50;
-    config.limit = 1450;
+    config.skip = 0;
+    config.limit = 1500;
 }
 if (parseInt(process.env.S) == 2) {
     config.skip = 1500;
@@ -30,8 +30,12 @@ if (parseInt(process.env.S) == 4) {
     config.skip = 4500;
     config.limit = 1500;
 }
-if (parseInt(process.env.S) == 4) {
+if (parseInt(process.env.S) == 5) {
     config.skip = 6000;
+    config.limit = 1500;
+}
+if (parseInt(process.env.S) == 5) {
+    config.skip = 7500;
     config.limit = 1500;
 }
 
@@ -91,7 +95,7 @@ EXPORT.nodelogmsg = function (logg) {
         }
     }
 };
-EXPORT.increment = 0;
+EXPORT.increment = config.skip;
 
 // insert scrapped users data
 
@@ -134,6 +138,7 @@ EXPORT.inserData = async function (data) {
         "`IsScrapped` = ? , " +
         //NUMBER
         "`KreiranTimestamp`= cast(? as int) , " +
+        "`Scrapped` = cast (1622348617 as int) , " +
         "`BrojOsobaKojePrati` = cast(? as int) , " +
         "`BrojPratilaca` = cast(? as int) , " +
         "`BrojLajkova` = cast(? as int) , " +
@@ -168,7 +173,7 @@ EXPORT.inserData = async function (data) {
             }
         }
         EXPORT.increment++;
-        console.log("Record updated >> " + EXPORT.increment);
+        console.log("[" + config.skip + "]RU>> " + EXPORT.increment);
     });
 }
 
@@ -370,41 +375,41 @@ EXPORT.parsejsonuser = async function () {
 
     // funkcija koja pronalazi mejl adresu unutar signature opisa
 
-    function parsestring(str) {
-        if (str != null && str != "") {
-            var array = str.match(/\S+/g);
-            if (array.length != null && array.length > 0) {
-                for (var i = 0, l = array.length; i < l; i++) {
-                    if (array[i].length != null && array[i].length > 2) {
-                        array[i] = array[i].trim();
-                        if ("!?.,;<>:{}[]".indexOf(array[i][0]) > -1) {
-                            array[i] = array[i].slice(1, array[i].length);
-                        }
-                        if ("!?.,;<>:{}[]".indexOf(array[i][array[i].length - 1]) > -1) {
-                            array[i] = array[i].slice(0, array[i].length - 1);
-                        }
-                        if (gmailvalidate(array[i]) == true) {
-                            return array[i];
-                            break;
-                        }
-                    }
-                }
-                return "";
-            }
-            return "";
-        }
-        return "";
-    }
 
-    function gmailvalidate(email) {
-        var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-        return re.test(String(email).toLowerCase());
-    }
     try {
 
 
         await EXPORT.PAGE.evaluate(async ({ }) => {
+            function parsestring(str) {
+                if (str != null && str != "") {
+                    var array = str.match(/\S+/g);
+                    if (array.length != null && array.length > 0) {
+                        for (var i = 0, l = array.length; i < l; i++) {
+                            if (array[i].length != null && array[i].length > 2) {
+                                array[i] = array[i].trim();
+                                if ("!?.,;<>:{}[]".indexOf(array[i][0]) > -1) {
+                                    array[i] = array[i].slice(1, array[i].length);
+                                }
+                                if ("!?.,;<>:{}[]".indexOf(array[i][array[i].length - 1]) > -1) {
+                                    array[i] = array[i].slice(0, array[i].length - 1);
+                                }
+                                if (gmailvalidate(array[i]) == true) {
+                                    return array[i];
+                                    break;
+                                }
+                            }
+                        }
+                        return "";
+                    }
+                    return "";
+                }
+                return "";
+            }
 
+            function gmailvalidate(email) {
+                var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+                return re.test(String(email).toLowerCase());
+            }
             function getBase64Image(imgUrl) {
                 return new Promise(
                     function (resolve) {
