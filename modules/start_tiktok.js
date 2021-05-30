@@ -60,38 +60,7 @@ var sc_len = -1;
 
 
 
-// funkcija koja pronalazi mejl adresu unutar signature opisa
 
-function parsestring(str) {
-    if (str != null && str != "") {
-        var array = str.match(/\S+/g);
-        if (array.length != null && array.length > 0) {
-            for (var i = 0, l = array.length; i < l; i++) {
-                if (array[i].length != null && array[i].length > 2) {
-                    array[i] = array[i].trim();
-                    if ("!?.,;<>:{}[]".indexOf(array[i][0]) > -1) {
-                        array[i] = array[i].slice(1, array[i].length);
-                    }
-                    if ("!?.,;<>:{}[]".indexOf(array[i][array[i].length - 1]) > -1) {
-                        array[i] = array[i].slice(0, array[i].length - 1);
-                    }
-                    if (gmailvalidate(array[i]) == true) {
-                        return array[i];
-                        break;
-                    }
-                }
-            }
-            return "";
-        }
-        return "";
-    }
-    return "";
-}
-
-function gmailvalidate(email) {
-    var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    return re.test(String(email).toLowerCase());
-}
 
 //funkcija koja pretvara image to base64 string
 
@@ -398,6 +367,39 @@ function getBase64(url) {
 }
 
 EXPORT.parsejsonuser = async function () {
+
+    // funkcija koja pronalazi mejl adresu unutar signature opisa
+
+    function parsestring(str) {
+        if (str != null && str != "") {
+            var array = str.match(/\S+/g);
+            if (array.length != null && array.length > 0) {
+                for (var i = 0, l = array.length; i < l; i++) {
+                    if (array[i].length != null && array[i].length > 2) {
+                        array[i] = array[i].trim();
+                        if ("!?.,;<>:{}[]".indexOf(array[i][0]) > -1) {
+                            array[i] = array[i].slice(1, array[i].length);
+                        }
+                        if ("!?.,;<>:{}[]".indexOf(array[i][array[i].length - 1]) > -1) {
+                            array[i] = array[i].slice(0, array[i].length - 1);
+                        }
+                        if (gmailvalidate(array[i]) == true) {
+                            return array[i];
+                            break;
+                        }
+                    }
+                }
+                return "";
+            }
+            return "";
+        }
+        return "";
+    }
+
+    function gmailvalidate(email) {
+        var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+        return re.test(String(email).toLowerCase());
+    }
     try {
 
 
