@@ -2,15 +2,15 @@ const MODE = process.env.MODE;
 
 
 const config = {
-    skip: 0,
-    limit: 50,
+    skip: 11,
+    limit: 1000,
     log: true,
     mode: MODE,
     settings: {
         devtools: false,
         //userDataDir: "./proxy_data_save",
         ignoreDefaultArgs: ["--disable-extensions"],
-        headless: true,
+        headless: false,
         defaultViewport: null,
         ignoreHTTPSErrors: true,
         args: [

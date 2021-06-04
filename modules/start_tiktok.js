@@ -1,44 +1,21 @@
 var config = require('./config');
-var axios = require('axios');
-const { Image, createCanvas } = require('canvas');
-const Xvfb = config.mode ? require('xvfb') : null;
 
+//const Realm = require('realm');
+
+//https://stackabuse.com/a-sqlite-tutorial-with-node-js/
+
+const Xvfb = config.mode ? require('xvfb') : null;
+var axios = require('axios');
 const sqlite3 = require('sqlite3').verbose();
 const db = new sqlite3.Database('./tiktok_tags.db');
-
+const cheerio = require('cheerio');
+const { Image, createCanvas } = require('canvas');
 if (config.mode == "local") {
 
 }
 if (config.mode == "test") {
     config.log = true;
 }
-
-
-if (parseInt(process.env.S) == 1) {
-    config.skip = 0;
-    config.limit = 1500;
-}
-if (parseInt(process.env.S) == 2) {
-    config.skip = 1500;
-    config.limit = 1500;
-}
-if (parseInt(process.env.S) == 3) {
-    config.skip = 3000;
-    config.limit = 1500;
-}
-if (parseInt(process.env.S) == 4) {
-    config.skip = 4500;
-    config.limit = 1500;
-}
-if (parseInt(process.env.S) == 5) {
-    config.skip = 6000;
-    config.limit = 1500;
-}
-if (parseInt(process.env.S) == 0) {
-    config.skip = 7500;
-    config.limit = 1500;
-}
-
 
 var EXPORT = {};
 
@@ -63,8 +40,19 @@ var scrapped = [];
 var sc_len = -1;
 
 
+// node log funkcija unutar content scripte
 
-
+EXPORT.nodelogmsg = function (logg) {
+    try {
+        if (config.log) {
+            console.log(logg);
+        }
+    } catch (err) {
+        if (config.log) {
+            console.log("Log message error => :", err);
+        }
+    }
+};
 
 //funkcija koja pretvara image to base64 string
 
@@ -82,23 +70,8 @@ function getBase64(url) {
     });
 }
 
-// node log funkcija unutar content scripte
-
-EXPORT.nodelogmsg = function (logg) {
-    try {
-        if (config.log) {
-            console.log(logg);
-        }
-    } catch (err) {
-        if (config.log) {
-            console.log("Log message error => :", err);
-        }
-    }
-};
-EXPORT.increment = config.skip;
-
 // insert scrapped users data
-
+EXPORT.inc = 0;
 EXPORT.inserData = async function (data) {
     try {
         if (data.Avatar.substring(0, 23) == "data:image/jpeg;base64,") {
@@ -121,60 +94,12 @@ EXPORT.inserData = async function (data) {
         console.log(e);
         data.Avatar = "";
     }
-    var querytorun =
-        "" +
-        "UPDATE `tiktok_uniq_users` " +
-        //TEXT
-        "SET `UrlDodatak` = ? , " +
-        "`IdBroj` = ? , " +
-        "`Ime` = ? , " +
-        "`Avatar` = ? , " +
-        "`Potpis` = ? , " +
-        "`SecUid` = ? , " +
-        "`LinkOpis` = ? , " +
-        "`Adress` = ? , " +
-        "`Link` = ? , " +
-        "`Mail` = ? , " +
-        "`IsScrapped` = ? , " +
-        //NUMBER
-        "`KreiranTimestamp`= cast(? as int) , " +
-        "`Scrapped` = cast (1622348617 as int) , " +
-        "`BrojOsobaKojePrati` = cast(? as int) , " +
-        "`BrojPratilaca` = cast(? as int) , " +
-        "`BrojLajkova` = cast(? as int) , " +
-        "`BrojVideoUploada` = cast(? as int) " +
-        //WHERE CLAUSE
-        'WHERE `User` = ?;'
-
-    var params = [
-        data.UrlDodatak,
-        data.IdBroj,
-        data.Ime,
-        data.Avatar,
-        data.Potpis,
-        data.SecUid,
-        data.LinkOpis,
-        "@" + data.UrlDodatak,
-        "https://www.tiktok.com/@" + data.UrlDodatak + "?",
-        data.Mail,
-        "true",
-        parseInt(data.KreiranTimestamp),
-        data.BrojOsobaKojePrati,
-        data.BrojPratilaca,
-        data.BrojLajkova,
-        data.BrojVideoUploada,
-        data.UrlDodatak
-    ];
-
-    db.run(querytorun, params, async function (err) {
-        if (err) {
-            if (config.log) {
-                return console.error(err.message);
-            }
-        }
-        EXPORT.increment++;
-        console.log("[" + config.skip + "]RU>> " + EXPORT.increment);
-    });
+    if (data.Avatar.trim() == "") {
+        console.log("Avatar error");
+        return false;
+    }
+    data.Avatar = data.Avatar.substring(0, 50) + "...";
+    console.log(data);
 }
 
 // close browser instance
@@ -223,7 +148,7 @@ EXPORT.start = async function () {
         EXPORT.br = await puppeteer.launch(configpup);
 
         if (config.log) {
-            // console.log("Opening the browser......");
+            console.log("Opening the browser...\n\n\n\n");
         }
         EXPORT.started = true;
     } catch (err) {
@@ -250,13 +175,12 @@ EXPORT.openpage = async function (pageurl, optimize) {
         await EXPORT.PAGE.goto(pageurl, {});
 
         // binding log function inside content script
-        //if (EXPORT.started == false) {
+
         await EXPORT.PAGE.exposeFunction("nodeLog", EXPORT.nodelogmsg);
-        await EXPORT.PAGE.exposeFunction("inserData", EXPORT.inserData);
-        //}
+        //await EXPORT.PAGE.exposeFunction("inserData", EXPORT.inserData);
     } catch (err) {
         if (config.log) {
-            //     console.log("Open page error => : ", err);
+            //console.log("Open page error => : ", err);
         }
     }
 }
@@ -357,20 +281,6 @@ EXPORT.optimizemem = async function () {
     }
 }
 
-function getBase64(url) {
-    return axios
-        .get(url, {
-            responseType: 'arraybuffer'
-        })
-        .then(response =>
-            Buffer.from(response.data, 'binary')
-                .toString('base64')
-        )
-        .catch((err) => {
-            "error"
-        })
-}
-
 EXPORT.parsejsonuser = async function () {
 
     // funkcija koja pronalazi mejl adresu unutar signature opisa
@@ -378,242 +288,293 @@ EXPORT.parsejsonuser = async function () {
 
     try {
 
+        const result = await EXPORT.PAGE.evaluate(body => body.innerText, await EXPORT.PAGE.$('body'));
+        const $ = cheerio.load(result);
+        var text = $('script[id="__NEXT_DATA__"]').html();
+        var json = JSON.parse(text);
+        var data = json.props.pageProps.userInfo;
 
-        await EXPORT.PAGE.evaluate(async ({ }) => {
-            function parsestring(str) {
-                if (str != null && str != "") {
-                    var array = str.match(/\S+/g);
-                    if (array.length != null && array.length > 0) {
-                        for (var i = 0, l = array.length; i < l; i++) {
-                            if (array[i].length != null && array[i].length > 2) {
-                                array[i] = array[i].trim();
-                                if ("!?.,;<>:{}[]".indexOf(array[i][0]) > -1) {
-                                    array[i] = array[i].slice(1, array[i].length);
-                                }
-                                if ("!?.,;<>:{}[]".indexOf(array[i][array[i].length - 1]) > -1) {
-                                    array[i] = array[i].slice(0, array[i].length - 1);
-                                }
-                                if (gmailvalidate(array[i]) == true) {
-                                    return array[i];
-                                    break;
-                                }
-                            }
-                        }
-                        return "";
-                    }
-                    return "";
-                }
-                return "";
-            }
-
-            function gmailvalidate(email) {
-                var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-                return re.test(String(email).toLowerCase());
-            }
-            function getBase64Image(imgUrl) {
-                return new Promise(
-                    function (resolve) {
-
-                        var img = new Image();
-                        img.src = imgUrl;
-                        img.setAttribute('crossOrigin', 'anonymous');
-
-                        img.onload = function () {
-                            var canvas = document.createElement("canvas");
-                            canvas.width = 50;
-                            canvas.height = 50;
-                            var ctx = canvas.getContext("2d");
-                            ctx.imageSmoothingEnabled = true;
-                            ctx.imageSmoothingQuality = "medium";
-                            ctx.drawImage(img, 0, 0, 50, 50);
-                            var dataURL = canvas.toDataURL("image/jpeg", 0.9);
-                            resolve(dataURL);
-                        }
-                        img.onerror = function () {
-                            resolve("error");
-                        }
-
-                    });
-
-            }
+        var insertData = {
+            "UrlDodatak": "#no_slug#",
+            "IdBroj": "#no_id#",
+            "Ime": "#no_name#",
+            "Avatar": "#no_avatar#",
+            "Mail": "#no_email#",
+            "Potpis": "#no_signature#",
+            "KreiranTimestamp": "0",
+            "SecUid": "#no_sec_uid#",
+            "LinkOpis": "#no_link#",
+            "BrojOsobaKojePrati": "0",
+            "BrojPratilaca": "0",
+            "BrojLajkova": "0",
+            "BrojVideoUploada": "0"
+        }
 
 
+        var error = false;
 
-            var text = document.getElementById("__NEXT_DATA__").text;
-            var json = JSON.parse(text);
-            var data = json.props.pageProps.userInfo;
+        try {
+            insertData.UrlDodatak = data.user.uniqueId.toLowerCase().trim();
+        } catch (e) {
+            error = true;
+            //  console.log("UrlDodatak err >> " + JSON.stringify(data) + "\n" + e);
+        }
+        try {
+            insertData.IdBroj = data.user.id.toLowerCase().trim();
+        } catch (e) {
+            error = true;
+            // console.log("IdBroj err >> " + JSON.stringify(data) + "\n" + e);
+        }
+        try {
+            insertData.Ime = data.user.nickname.trim();
+        } catch (e) {
+            error = true;
+            // console.log("Ime err >> " + JSON.stringify(data) + "\n" + e);
+        }
+        try {
+            insertData.Avatar = data.user.avatarThumb.trim();
+        } catch (e) {
+            error = true;
+        }
 
-            var insertData = {
-                "UrlDodatak": "#no_slug#",
-                "IdBroj": "#no_id#",
-                "Ime": "#no_name#",
-                "Avatar": "#no_avatar#",
-                "Mail": "#no_email#",
-                "Potpis": "#no_signature#",
-                "KreiranTimestamp": "0",
-                "SecUid": "#no_sec_uid#",
-                "LinkOpis": "#no_link#",
-                "BrojOsobaKojePrati": "0",
-                "BrojPratilaca": "0",
-                "BrojLajkova": "0",
-                "BrojVideoUploada": "0"
-            }
-
-
-            var error = false;
-
-            try {
-                insertData.UrlDodatak = data.user.uniqueId.toLowerCase().trim();
-            } catch (e) {
-                error = true;
-                //  console.log("UrlDodatak err >> " + JSON.stringify(data) + "\n" + e);
-            }
-            try {
-                insertData.IdBroj = data.user.id.toLowerCase().trim();
-            } catch (e) {
-                // console.log("IdBroj err >> " + JSON.stringify(data) + "\n" + e);
-            }
-            try {
-                insertData.Ime = data.user.nickname.trim();
-            } catch (e) {
-                error = true;
-                // console.log("Ime err >> " + JSON.stringify(data) + "\n" + e);
-            }
-            try {
-                insertData.Avatar = data.user.avatarThumb.trim();
-            } catch (e) {
-                console.log("Avatar err >> " + e);
-            }
-
-            try {
-                insertData.Avatar = await getBase64Image(insertData.Avatar);
-            } catch (e) {
-                console.log("Avatar err >> " + e);
-            }
-
-            try {
-                if (data.user.signature.trim() == "") {
-                    insertData.Potpis = "#no_signature#";
-                } else {
-                    insertData.Potpis = data.user.signature.replace(/(?:\r\n|\r|\n)/g, ' ').trim();
-                }
-
-            } catch (e) {
+        try {
+            if (data.user.signature.trim() == "") {
                 insertData.Potpis = "#no_signature#";
-                error = true;
-                //  console.log("Potpis err >> " + JSON.stringify(data) + "\n" + e);
+            } else {
+                insertData.Potpis = data.user.signature.replace(/(?:\r\n|\r|\n)/g, ' ').trim();
             }
-            try {
-                if (insertData.Potpis != "#no_signature#") {
-                    var mail = parsestring(data.user.signature.trim());
-                    if (mail.trim() != "") {
-                        insertData.Mail = mail.trim();
-                    } else {
-                        insertData.Mail = "#no_email#";
-                    }
+
+        } catch (e) {
+            insertData.Potpis = "#no_signature#";
+            //error = true;
+            //  console.log("Potpis err >> " + JSON.stringify(data) + "\n" + e);
+        }
+        try {
+            if (insertData.Potpis != "#no_signature#") {
+                var mail = parsestring(data.user.signature.trim());
+                if (mail.trim() != "") {
+                    insertData.Mail = mail.trim();
                 } else {
                     insertData.Mail = "#no_email#";
                 }
-            } catch (e) {
+            } else {
                 insertData.Mail = "#no_email#";
             }
+        } catch (e) {
+            insertData.Mail = "#no_email#";
+        }
 
 
-            try {
-                insertData.KreiranTimestamp = parseInt(data.user.createTime);
-            } catch (e) {
-                error = true;
-                //  console.log("KreiranTimestamp err >> " + JSON.stringify(data) + "\n" + e);
-            }
-            try {
-                insertData.SecUid = data.user.secUid.trim();
-            } catch (e) {
-                error = true;
-                //  console.log("SecUid err >> " + JSON.stringify(data) + "\n" + e);
-            }
-            try {
-                if (data.user.bioLink.link.trim() == "") {
-                    insertData.LinkOpis = "#no_link#"
-                } else {
-                    insertData.LinkOpis = data.user.bioLink.link;
-                }
-            } catch (e) {
+        try {
+            insertData.KreiranTimestamp = parseInt(data.user.createTime);
+        } catch (e) {
+            error = true;
+            //  console.log("KreiranTimestamp err >> " + JSON.stringify(data) + "\n" + e);
+        }
+        try {
+            insertData.SecUid = data.user.secUid.trim();
+        } catch (e) {
+            error = true;
+            //  console.log("SecUid err >> " + JSON.stringify(data) + "\n" + e);
+        }
+        try {
+            if (data.user.bioLink.link.trim() == "") {
                 insertData.LinkOpis = "#no_link#"
-                //error = true;
-                // console.log("LinkOpis err >> " + JSON.stringify(data) + "\n" + e);
+            } else {
+                insertData.LinkOpis = data.user.bioLink.link;
             }
-            try {
-                insertData.BrojOsobaKojePrati = BigInt(data.stats.followingCount).toString();
-            } catch (e) {
-                error = true;
-                //  console.log("BrojOsobaKojePrati err >> " + JSON.stringify(data) + "\n" + e);
-            }
-            try {
-                insertData.BrojPratilaca = BigInt(data.stats.followerCount).toString();
-            } catch (e) {
-                error = true;
-                // console.log("BrojPratilaca err >> " + JSON.stringify(data) + "\n" + e);
-            }
-            try {
-                insertData.BrojLajkova = BigInt(data.stats.heartCount).toString();
-            } catch (e) {
-                error = true;
-                //  console.log("BrojLajkova err >> " + JSON.stringify(data) + "\n" + e);
-            }
-            try {
-                insertData.BrojVideoUploada = BigInt(data.stats.videoCount).toString();
-            } catch (e) {
-                error = true;
-                ///  console.log("BrojVideoUploada err >> " + JSON.stringify(data) + "\n" + e);
-            }
+        } catch (e) {
+            insertData.LinkOpis = "#no_link#"
+            //error = true;
+            // console.log("LinkOpis err >> " + JSON.stringify(data) + "\n" + e);
+        }
+        try {
+            insertData.BrojOsobaKojePrati = BigInt(data.stats.followingCount).toString();
+        } catch (e) {
+            error = true;
+            //  console.log("BrojOsobaKojePrati err >> " + JSON.stringify(data) + "\n" + e);
+        }
+        try {
+            insertData.BrojPratilaca = BigInt(data.stats.followerCount).toString();
+        } catch (e) {
+            error = true;
+            // console.log("BrojPratilaca err >> " + JSON.stringify(data) + "\n" + e);
+        }
+        try {
+            insertData.BrojLajkova = BigInt(data.stats.heartCount).toString();
+        } catch (e) {
+            error = true;
+            //  console.log("BrojLajkova err >> " + JSON.stringify(data) + "\n" + e);
+        }
+        try {
+            insertData.BrojVideoUploada = BigInt(data.stats.videoCount).toString();
+        } catch (e) {
+            error = true;
+            ///  console.log("BrojVideoUploada err >> " + JSON.stringify(data) + "\n" + e);
+        }
+        if (error != true) {
+            console.log(insertData);
+            //EXPORT.inserData(insertData);
+        } else {
+            //console.log("errror");
+        }
 
-            if (error == true) {
-                nodeLog(window.location.href);
-            }
-            await inserData(insertData);
-        }, {});
     } catch (err) {
         if (config.log) {
-            // console.log("Parse user Err => : ", err);
+            console.log("Parse user Err => : ", err);
         }
     }
 }
 
 
+EXPORT.tagsnumbers = async function () {
+
+    // funkcija koja pronalazi mejl adresu unutar signature opisa
+
+
+    try {
+
+        const result = await EXPORT.PAGE.evaluate(body => body.innerText, await EXPORT.PAGE.$('body'));
+        const $ = cheerio.load(result);
+        var text = $('script[id="__NEXT_DATA__"]').html();
+        text = text.substring(text.indexOf("\"viewCount\":") + 12);
+        text = text.substring(0, text.indexOf("},"));
+        var int = parseFloat(text);
+        console.log("Keyword >> " + EXPORT.logkey + " ViewsNumber: " + int);
+
+    } catch (err) {
+        if (config.log) {
+            console.log("Parse user Err => : ", err);
+        }
+    }
+}
+
+
+
+
+// infinite scrool of page
+EXPORT.numberofch = 4;
+EXPORT.number = 0;
+
+EXPORT.infinitescrool = async function (pageurl) {
+    EXPORT.numberofch = 4;
+    EXPORT.number = 0;
+    try {
+        if (config.log) {
+            console.log("Start infinite scrolling.");
+        }
+        var number = EXPORT.number;
+        var numberofch = EXPORT.numberofch;
+        await EXPORT.PAGE.evaluate(async ({ number, numberofch }) => {
+            setInterval(async function () {
+                document.documentElement.scrollTop = 1e35;
+                await nodeLog(document.querySelectorAll("div.video-feed-item a[href]").length);
+                if (number == document.querySelectorAll("div.video-feed-item a[href]").length) {
+                    numberofch--;
+                } else {
+                    numberofch = 4;
+                }
+                number = document.querySelectorAll("div.video-feed-item a[href]").length;
+                if (numberofch < 1) {
+                    await nodeLog("Scrapping done\n\n");
+                    var jq1 = document.createElement("script");
+                    jq1.type = "text/javascript";
+                    jq1.id = "outputdata";
+                    document.getElementsByTagName("head")[0].appendChild(jq1)
+                    return false;
+                }
+            }, 5000)
+        }, { number, numberofch });
+    } catch (err) {
+        if (config.log) {
+            console.log("Scroll error => : ", err);
+        }
+    }
+}
+EXPORT.limitnum = 3;
+
+// looping throught all keyowords in sqllite 
+EXPORT.logkey = "";
 EXPORT.loopfunction = async function () {
 
     if (EXPORT.started == false) {
         await EXPORT.start();
     }
 
+    await EXPORT.sleep(parseFloat("10"));
 
-    db.all("SELECT `Id`, `User` From `tiktok_uniq_users` LIMIT " + config.limit + " OFFSET " + config.skip + ";", async (error, rows) => {
-        if (error) {
-            if (config.log) {
-                return console.error(error.message);
+    //TAGS VIEWS NUMBERS
+    if (parseInt(process.env.S) == 1) {
+        db.all("SELECT `Id`, `User` From `tiktok_uniq_users` ORDER BY`Id` ASC", async (error, rows) => {
+            if (error) {
+                if (config.log) {
+                    return console.error(error.message);
+                }
             }
-        }
 
-        if (EXPORT.started == false) {
-            await EXPORT.start();
-            await EXPORT.sleep(parseFloat("30"));
-        }
+            if (config.mode == "server") {
+                EXPORT.XVFB.stop();
+            }
 
-        if (config.mode == "server") {
-            EXPORT.XVFB.stop();
-        }
+            for (var i = 0, l = rows.length; i < l; i++) {
+                EXPORT.logkey = rows[i].Keyword;
+                await EXPORT.openpage("view-source:https://www.tiktok.com/@" + rows[i].User + "?", false);
+                await EXPORT.parsejsonuser();
+                await EXPORT.sleep(parseFloat("2"));
+            }
+            await EXPORT.close();
+            db.close();
+        });
+    }
 
-        for (var i = 0, l = rows.length; i < l; i++) {
-            //EXPORT.idnow = rows[i].Id;
-            //EXPORT.keywordnow = row.Keyword;
-            //console.log("us  " + rows[i].User);
-            await EXPORT.openpage("https://www.tiktok.com/@" + rows[i].User + "?", false);
-            await EXPORT.parsejsonuser();
-            await EXPORT.sleep(parseFloat("5"));
-        }
-        await EXPORT.close();
-        db.close();
-    });
+    if (parseInt(process.env.S) == 2) {
+        db.all("SELECT `Id`, `Keyword` From `tiktok_tags` WHERE `IsScrapped` = 'false' ORDER BY  `Id` ASC", async (error, rows) => {
+            if (error) {
+                if (config.log) {
+                    return console.error(error.message);
+                }
+            }
+
+            if (config.mode == "server") {
+                EXPORT.XVFB.stop();
+            }
+
+            for (var i = 0, l = rows.length; i < l; i++) {
+                EXPORT.logkey = rows[i].Keyword;
+                await EXPORT.openpage("view-source:https://www.tiktok.com/tag/" + rows[i].Keyword + "?is_copy_url=1&is_from_webapp=v1", false);
+                //await EXPORT.openpage("view-source:https://www.tiktok.com/@foodieforone?", false)
+                await EXPORT.tagsnumbers();
+                await EXPORT.sleep(parseFloat("2"));
+            }
+            await EXPORT.close();
+            db.close();
+        });
+    }
+    if (parseInt(process.env.S) == 3) {
+        db.all("SELECT `Id`, `Keyword` From `tiktok_tags` WHERE `IsScrapped` = 'false' ORDER BY  `Id` DESC", async (error, rows) => {
+            EXPORT.limitnum--;
+            if (error) {
+                if (config.log) {
+                    return console.error(error.message);
+                }
+            }
+
+            if (EXPORT.started == false) {
+                await EXPORT.start();
+            }
+
+            for (var i = 0, l = rows.length; i < l; i++) {
+                EXPORT.keywordnow = rows[i].Keyword;
+                await EXPORT.sleep(5);
+                await EXPORT.openpage("https://www.tiktok.com/tag/" + rows[i].Keyword + "?is_copy_url=1&is_from_webapp=v1", false);
+                await EXPORT.infinitescrool();
+                await EXPORT.waitfordownload();
+
+            }
+
+        });
+
+    }
 }
 
 

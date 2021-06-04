@@ -5,11 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "cross-env MODE=local S=0 node -r dotenv/config index.js dotenv_config_path=.env.dev",
-    "server1": "cross-env MODE=server S=1 node -r dotenv/config index.js dotenv_config_path=.env.prod",
-    "server2": "cross-env MODE=server S=2 node -r dotenv/config index.js dotenv_config_path=.env.prod",
-    "server3": "cross-env MODE=server S=3 node -r dotenv/config index.js dotenv_config_path=.env.prod",
-    "server4": "cross-env MODE=server S=4 node -r dotenv/config index.js dotenv_config_path=.env.prod",
-    "server5": "cross-env MODE=server S=5 node -r dotenv/config index.js dotenv_config_path=.env.prod",
+    "userscrape": "cross-env MODE=local S=1 node -r dotenv/config index.js dotenv_config_path=.env.prod",
+    "tagscrape": "cross-env MODE=local S=2 node -r dotenv/config index.js dotenv_config_path=.env.prod",
+    "usersfind": "cross-env MODE=local S=3 node -r dotenv/config index.js dotenv_config_path=.env.prod",
     "test": "cross-env MODE=test node -r dotenv/config index.js dotenv_config_path=.env.dev"
   },
   "author": "",
@@ -18,6 +16,7 @@
     "axios": "^0.21.1",
     "big-integer": "^1.6.48",
     "canvas": "^2.8.0",
+    "cheerio": "^1.0.0-rc.9",
     "cross-env": "^7.0.3",
     "dotenv": "^8.2.0",
     "fs": "0.0.1-security",
